@@ -1,2 +1,3 @@
-ADD_EXECUTABLE(systest main.cpp)
+SET(SYSTEST_SRC main.cpp SignalHandling.cpp)
+ADD_EXECUTABLE(systest ${SYSTEST_SRC})
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
