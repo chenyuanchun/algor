@@ -1,8 +1,9 @@
 #include "Container.h"
+#include "Algorithm.h"
 
 int main()
 {
-  Vector::assign();
+  Searching::forEach();
 
   return 0;
 }

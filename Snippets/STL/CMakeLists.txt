@@ -1,4 +1,5 @@
 SET(SYSTEST_SRC main.cpp 
+                Algorithm.cpp
                 Container.cpp)
 
 ADD_EXECUTABLE(container ${SYSTEST_SRC})
