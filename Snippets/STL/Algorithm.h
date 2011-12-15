@@ -4,5 +4,6 @@
 namespace Searching{
 
   void forEach();
+  void testfind();
 }
 #endif //__ALGORITHM_H__
