@@ -1,0 +1,14 @@
+#!/bin/tcsh
+
+set path = (. /mnts/cdstools/share/bin /mnts/cdstools/rhel-i686-5.2/bin \
+  /mnts/cdstools/gcc-4.3.3/rhel-x86_64-5.2/bin \
+  /bin /usr/bin /usr/ucb /usr/sbin /usr/local/bin )
+
+cd /mnts/buildarea13/ase/rayc/src/dailyase
+set LOG_FILE_NAME="/tmp/ase470make.`hostname`.log"
+svn update > $LOG_FILE_NAME
+
+unsetenv PLATFORM
+algoworkon --wide -c algomake clean
+algoworkon --wide -c algomake CCACHE=no OPT=no DEBUG=yes SMART_HEAP_DEBUG=yes RWDEBUG=no NO_SHARED_OBJECTS=no MULTITHREAD=yes NO_HARD_LINKS=yes GENLIB_DEBUG=yes PARALLEL=3 >> $LOG_FILE_NAME
+

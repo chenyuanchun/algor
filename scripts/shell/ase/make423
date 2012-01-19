@@ -1,0 +1,4 @@
+alias perl /mnts/cdstools/perl-5.8.4/solaris-sparc-2.8/bin/perl
+setenv PERL5LIB /mnts/cdstools/share/lib/
+
+algomake DEBUG=yes OPT=no COMPILER=SunCC tool_SunCC_path=/mnts/cdstools/SunCC-8.0.5/solaris-sparc-2.10 tool_flex_path=/mnts/cdstools/flex-2.5.4/solaris-sparc-2.10-SunCC-6.1 tool_AlgoCxx_path=/mnts/postings/AlgoCxx-1.0.0/100a-000003/solaris-sparc-2.8-SunCC-6.2.10-noopt-debug tool_SourcePro/Core_path=/mnts/cdstools/SourcePro/Core-8.6.0p1/solaris-sparc-2.8-SunCC-6.2-sunperf-mt tool_SourcePro/DB_path=/mnts/cdstools/SourcePro/DB-5.1.0p2/solaris-sparc-2.8-SunCC-6.2-sunperf-mt tool_SourcePro/Analysis_path=/mnts/cdstools/SourcePro/Analysis-7.1.0p3/solaris-sparc-2.8-SunCC-6.2-sunperf-mt

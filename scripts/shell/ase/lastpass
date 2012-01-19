@@ -1,0 +1,7 @@
+#!/bin/sh
+
+#Usage:
+#  lastpass TestCaseName
+
+grep $1 $HOME/testreports/$MYPLATFORM/daily-report-0*.csv | grep PASS | awk -F\: '{ print $1 }' | sort | tail -n 1
+

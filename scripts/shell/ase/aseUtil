@@ -1,0 +1,14 @@
+#!/bin/sh
+
+EXECUTABLE=runaseutility
+
+PARAMS="-m $MACHINE -p $PORT $CONFIG $SECUR $@"
+
+command="$BINDIR/$EXECUTABLE $PARAMS"
+
+echo $command
+$command
+
+
+
+

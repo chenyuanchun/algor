@@ -1,0 +1,20 @@
+#!/bin/tcsh
+#set echo
+
+if ( ${%1} != 0 ) then
+  set ASEPATH = "tool_ASEUtilitiesLib_path=/mnts/buildarea13/ase/rayc/src/ASE-4.7.0/ship/${PLATFORM_WIDE}"
+else
+  set ASEPATH = ""
+endif
+
+cd $SOURCE/utility470/
+unsetenv PLATFORM
+
+if ( ${%ASEPATH} != 0 ) then
+  algoworkon --wide -pASEUtilities -c algomake clean
+endif
+
+algoworkon --wide -pASEUtilities -c algomake CCACHE=no OPT=no DEBUG=yes SMART_HEAP_DEBUG=yes RWDEBUG=no NO_SHARED_OBJECTS=no MULTITHREAD=yes NO_HARD_LINKS=yes GENLIB_DEBUG=yes PARALLEL=3 $ASEPATH
+
+setenv PLATFORM `/mnts/cdstools/share/bin/getplatform`
+cd -

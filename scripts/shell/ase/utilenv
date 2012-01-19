@@ -1,0 +1,15 @@
+#!/bin/tcsh
+
+setenv UTIL_SRC /mnts/buildarea13/ase/rayc/src/utility470
+setenv ASE_HOME ${UTIL_SRC}/ship/${PLATFORM_WIDE}/aseutilities-v
+
+setenv LD_LIBRARY_PATH ${ASE_HOME}/lib:${ASE_HOME}/../lib64:${ASE_HOME}/../lib:${ASE_HOME}/../lib/pthread/ppc64
+
+setenv ASE_CONFIG_PATH ${ASE_HOME}/cfg
+
+setenv CT_EXEC ${UTIL_SRC}/obj/${PLATFORM_WIDE}/ComposeTriggers/composeTriggers
+setenv CR_EXEC ${UTIL_SRC}/obj/${PLATFORM_WIDE}/Compose/composeRiskfactors
+setenv CONCAT_EXEC ${UTIL_SRC}/obj/${PLATFORM_WIDE}/Concat/concat
+setenv CONVERT_EXEC ${UTIL_SRC}/obj/${PLATFORM_WIDE}/Convert/convert
+setenv SHRED_EXEC ${UTIL_SRC}/obj/${PLATFORM_WIDE}/Shred/shred
+

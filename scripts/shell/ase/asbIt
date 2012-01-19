@@ -1,0 +1,49 @@
+#!/bin/tcsh
+
+setenv ALGO_TOP /home/rayc/ase/topForASB
+set ORA_VERSION = 11
+
+setenv ALGO_HOME /mnts/packaging/central_installation/$1/AlgoSuite-daily/latest/${PLATFORM_WIDE}-oracle-${ORA_VERSION}g
+
+switch ( "$1" )
+case "4.7.2":
+  if ( ${%2} != 0 ) then
+    setenv ALGO_HOME /mnts/packaging/central_installation/4.7.1/AlgoSuite-daily/latest/${PLATFORM_WIDE}-oracle-${ORA_VERSION}g
+    set ASB_HOME = /mnts/postings5/ASE_Client-4.7.2/$2/share/asb-v4.7.2
+  else
+    set ASB_HOME = ${ALGO_HOME}/ase
+  endif
+  breaksw
+case "4.7.1":
+  if ( ${%2} != 0 ) then
+    set ASB_HOME = /mnts/postings5/ASE_Client-4.7.2/$2/share/asb-v4.7.0
+  else
+    set ASB_HOME = ${ALGO_HOME}/ase
+  endif
+  breaksw
+case "4.7.0":
+  if ( $PLATFORM_WIDE == "solaris-x86_64-2.10" ) then
+    set ORA_VERSION = 10
+    setenv ALGO_HOME /mnts/packaging/central_installation/$1/AlgoSuite-daily/promoted/${PLATFORM_WIDE}-oracle-${ORA_VERSION}g
+  endif
+  if ( ${%2} != 0 ) then
+    set ASB_HOME = /mnts/postings5/ASE_Client-4.7.0/$2/share/asb-v4.7.0
+  else
+    set ASB_HOME = ${ALGO_HOME}/asb-v4.7.0
+  endif
+  breaksw
+case "4.6.0":
+  set ORA_VERSION = 10
+  setenv ALGO_HOME /mnts/packaging/central_installation/$1/AlgoSuite-daily/promoted/${PLATFORM}-oracle-${ORA_VERSION}g
+  set ASB_HOME = ${ALGO_HOME}/asb-v4.6.0
+endsw
+
+#ALGO_HOME=/mnts/buildarea13/ase/rayc/algosuite/AlgoSuite-470
+#ASB_HOME=/mnts/postings5/ASE_Client-4.7.0/0015/share/asb-v4.7.0
+#COMMAND="$ALGO_HOME/asb-v4.6.0/bin/asb -c $ALGO_TOP/cfg/ConfigServer.cfg -R algosuite-test"
+set COMMAND="${ASB_HOME}/bin/asb -c $ALGO_TOP/cfg/ConfigServer.cfg -R algosuite-test"
+
+echo $COMMAND
+$COMMAND &
+
+

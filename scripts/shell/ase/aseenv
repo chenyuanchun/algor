@@ -1,0 +1,17 @@
+#!/bin/tcsh
+
+setenv PROP_DIR /home/rayc/ase/prop
+setenv LD_LIBRARY_PATH $BINDIR/../lib
+setenv ASE_CONFIG_PATH $BINDIR/../cfg
+
+setenv MACHINE $HOST
+setenv PORT 43041
+
+setenv CONFIG "-C ./aserc"
+setenv CONNECT "-m $MACHINE -p $PORT"
+
+setenv SECUR "-R algosuite-test -U algo -P password"
+
+setenv STARTASE "$BINDIR/runaseserver $SECUR $CONFIG -p $PORT"
+setenv ASEUTIL "$BINDIR/runaseutility $SECUR $CONFIG $CONNECT"
+setenv ASELOAD "$BINDIR/runaseload $SECUR $CONFIG -v"

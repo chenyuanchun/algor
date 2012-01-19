@@ -1,0 +1,17 @@
+#!/bin/tcsh
+
+if ( ${%1} == 0 ) then
+  set BUILD_VER = 4.7.0
+else
+  set BUILD_VER = $1
+endif
+
+set ASESRC=/mnts/buildarea13/ase/rayc/src/ASE-${BUILD_VER}
+
+cd $ASESRC
+
+find . -name "*.[CH]" ! -path "./ship*" ! -path "./export*" ! -path "./obj*" > cscope.files
+gtags -f cscope.files
+cscope -b -q -k
+
+cd -

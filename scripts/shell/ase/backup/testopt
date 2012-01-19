@@ -1,0 +1,6 @@
+#!/bin/sh
+
+opt_results=`getopt abc:d: $*`
+set -- $opt_results 
+
+echo $*

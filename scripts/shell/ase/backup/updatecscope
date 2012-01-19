@@ -1,0 +1,17 @@
+#!/bin/tcsh
+
+if ( ${%1} == 0 ) then
+  set BUILD_VER = 4703
+else
+  set BUILD_VER = $1
+endif
+
+set ASESRC=/mnts/buildarea13/ase/rayc/src/ase${BUILD_VER}
+
+cd $SOURCE/cscope/${BUILD_VER}/
+mv cscope.* ../backup/${BUILD_VER}
+
+find $ASESRC -name "*.[CH]" ! -path "$ASESRC/ship*" ! -path "$ASESRC/export*" ! -path "$ASESRC/obj*" > cscope.files
+cscope -b -q -k
+
+cd -

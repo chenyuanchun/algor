@@ -1,0 +1,26 @@
+#!/bin/tcsh
+
+if ( ${%1} == 0 ) then
+  set PRODUCT_DIR = ASE-4.7.0
+else
+  set PRODUCT_DIR = $1
+endif
+
+set ASESRC=/mnts/buildarea13/ase/rayc/src/${PRODUCT_DIR}
+
+cd $ASESRC
+
+if ( -e cscope.files ) then
+  echo "cleaning up old cscope files..."
+  rm -f cscope.*
+endif
+
+echo "collecting source files..."
+
+find . -name "*.[CH]" ! -path "./ship*" ! -path "./export*" ! -path "./obj*" > cscope.files
+
+echo "creating tags..."
+gtags -f cscope.files
+cscope -b -q -k
+
+cd -

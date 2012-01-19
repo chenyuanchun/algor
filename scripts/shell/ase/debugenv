@@ -1,0 +1,11 @@
+#!/bin/tcsh
+
+if($1 == cmake) then
+  setenv BUILD_DIR ${TEMP}/builds/ase480
+  setenv ASE_HOME ${BUILD_DIR}/ship/rhel-x86_64-5.2/ase-v4.7.0
+  setenv SERVER_EXEC ${ASE_HOME}/bin/exec/aseserver
+  setenv UTIL_EXEC ${ASE_HOME}/bin/exec/aseutility
+else
+  setenv ASE_HOME $SOURCE/ASE-4.7.0/ship/${PLATFORM_WIDE}/ase-v
+  setenv SERVER_EXEC $SOURCE/ASE-4.7.0/obj/${PLATFORM_WIDE}/ScenarioEngine/aseserver
+endif

@@ -1,0 +1,751 @@
+#!/usr/bin/env perl
+
+require 5.6.0;
+
+use strict;
+use integer;
+
+$0=(split(/\//,$0))[-1];
+
+use Cwd qw(cwd);
+
+require "common.pl";
+require "platform.pl";
+
+use Options;
+
+use vars qw($MAKEFILES $GENERIC_MAKEFILES %KNOWN_PROJECTS);
+%KNOWN_PROJECTS=( 'risk++' => "Risk++",
+		  'rw'     => "RiskWatch",
+		  'Source' => "RiskWatch", # Oddly named repo
+		  'hr'     => "ASE",
+		  "historisk"=>"ASE",
+		  'rwh'    => "RiskWarehouse",
+		  'gl'     => "GenLib",
+		  'bt'     => "BlackTower",
+		  'PCRE'   => "PCRE",
+		  'PCU'    => "PCU",
+		  'AE'	   => "AggrEngine",
+		  "ASE"    => "ASE",
+		  'ADS'    => "ADS",
+		  "RWEngine"   => "RWEE",
+		  "RiskWatchEngine"   => "RWEE",
+		  "PC_Optimizer" => "PC_Optimizer",
+		);
+
+use vars(qw(%paths %share_paths %default_paths %default_share_paths));
+
+%default_share_paths=('SHIPDIR' => 'ship');
+
+%default_paths=(%default_share_paths,
+		'EXPORTDIR' => 'export',
+		'OBJECTDIR' => 'obj');
+
+%share_paths=(%default_share_paths,
+	      'POSTDIR' => 'post',
+	      'RUNNABLEDIR' => 'run',
+	      'TESTABLEDIR' => 'test');
+
+%paths=( %share_paths,
+	 %default_paths);
+
+
+
+MAIN:
+{
+  # I feel funny having my() variables at file scope, so let's have
+  # a nice block for them to live in.
+  # Process arguments.  There aren't many....
+  my($top);
+  my($doCommand)=0;
+  my($dashdash)=0;
+  my($root,@variants,$project,$compiler,$multithread,$singlethread,$static,$shared,$stl);
+  my(@command);
+  my($optimize,$debug,$top);
+  my $share=0;
+  my $share_variant=0;
+  my $is_wide;
+  my $is_narrow;
+  my(%outputs)=map(($_.'dir'=>undef,
+		    $_.'root'=>undef),
+		   values(%paths));
+
+  my($Options)=new Options( [ "root|r=s",\$root,"path","","ALGOROOT" ],
+			    [ "compiler=s",\$compiler,"name" ],
+			    [ "variant|v=s",\@variants ],
+
+			    map([ $_.'=s',\$outputs{$_},"path"],keys(%outputs)),
+
+			    [ "project|p=s",\$project,"name" ],
+			    [ "debug!",\$debug ],
+			    [ "optimize!",\$optimize ],
+			    [ "exec|c=s*",\@command ],
+			    [ "multithread|mt!",\$multithread ],
+			    [ "singlethread|st!",\$singlethread ],
+			    [ "static!",\$static ],
+			    [ "stl!",\$stl ],
+			    [ "share!",\$share ],
+			    [ "share-variant!",\$share_variant ],
+			    [ "shared!",\$shared ],
+			    [ "makefiles=s",\$MAKEFILES ],
+			    [ "generic-makefiles=s",\$GENERIC_MAKEFILES ],
+			    [ "wide",\$is_wide ],
+			    [ "narrow",\$is_narrow ]);
+
+  if(exists($ENV{ALGOWORKON_ARGS})) {
+    unshift(@ARGV,split(/\s+/,$ENV{ALGOWORKON_ARGS}));
+  }
+  my(@args)=$Options->Parse(@ARGV);
+  if(@args>1) {
+    $Options->ExitUsage(127,"Too many options\n");
+  } elsif(@args==1) {
+    $top=shift(@args);
+  }
+
+  unless(defined($MAKEFILES)) {
+    $MAKEFILES="makefiles";
+  }
+  unless(defined($GENERIC_MAKEFILES)) {
+    $GENERIC_MAKEFILES="$MAKEFILES/system";
+  }
+  if(defined($is_narrow) and !defined($is_wide)) {
+    $is_wide=!$is_narrow;
+    undef $is_narrow;
+  }
+  if(defined($is_wide)) {
+    if(defined($is_narrow)) {
+      $Options->ExitUsage(127,"Do not use --wide and --narrow together.\n");
+    }
+    if($is_wide) {
+      $ENV{WIDE_ARCH}='yes';
+    } else {
+      delete($ENV{WIDE_ARCH});
+    }
+  }
+
+  if(defined($compiler)) {
+    $compiler=~s/\+/x/g;
+    my($cname,$cver)=split(/-/,$compiler,2);
+    die "$0: No version found in --compiler=$compiler\n" unless defined $cver;
+    unshift(@variants,$compiler);
+    $ENV{COMPILER}=$cname;
+    $ENV{'tool_'.$cname.'_version'}=$cver;
+  }
+  if(defined($static) and defined($shared)) {
+    $Options->ExitUsage(127,"--static and --shared cannot be used together.\n");
+  }
+  # Automatically set some variants here?  Which ones?
+  if(defined($optimize)) {
+    if($optimize) { $ENV{OPT}='yes';  }
+    else          { $ENV{OPT}='no'; push(@variants,"noopt") }
+  }
+  if(defined($debug)) {
+    if($debug)    { $ENV{DEBUG}='yes'; push(@variants,"debug") }
+    else          { $ENV{DEBUG}='no';  }
+  }
+  if(defined($multithread)) {
+    if($multithread) { $ENV{MULTITHREAD}='yes'; push(@variants,'mt'); }
+    else             { $ENV{MULTITHREAD}='no'; }
+  }
+  if(defined($singlethread)) {
+    if($singlethread) { $ENV{MULTITHREAD}='no'; push(@variants,'st'); }
+    else             { $ENV{MULTITHREAD}='yes'; }
+  }
+  if(defined($static)) {
+    if($static)   { $ENV{NO_SHARED_OBJECTS}='yes'; push(@variants,"static"); }
+    else          { $ENV{NO_SHARED_OBJECTS}='no'; }
+  }
+  if(defined($shared)) {
+    if($shared)   { $ENV{NO_SHARED_OBJECTS}='no';  push(@variants,"shared"); }
+    else          { $ENV{NO_SHARED_OBJECTS}='yes'; }
+  }
+  if(defined($stl)) {
+    if($stl)   { $ENV{CXX_STL}='yes'; }
+    else       { $ENV{CXX_STL}='no';  push(@variants,"nostl"); }
+  }
+
+  my($variant);
+  $variant=join('-',@variants) if @variants;
+
+  my $have_env_PWD=exists($ENV{PWD});
+  my($cwd)=cwd;
+  delete $ENV{PWD} unless($have_env_PWD);
+
+  if(defined($top)) {
+    unless(File::Path::isFullPath($top)) {
+      $top=File::Path::Canonize("$cwd/$top");
+      die unless defined($top);
+    }
+    unless(chdir($top)) {
+      warn "$0: Cannot change working directory to \"$top\"--$!\n";
+      exit(2);
+    }
+    # Setting PWD on Windows is bad 'cause then Cygwin (v1.7) sees the
+    # Windows path and gets all upset.  So only set it if it is set.
+    $ENV{PWD}=$top if(exists($ENV{PWD}));
+  } else {
+    # Wander up the tree, looking for \"makefiles\"
+    my(@path)=split(/\//,$cwd);
+    while(@path) {
+      last if -e join('/',@path,$MAKEFILES);
+    } continue {
+      pop(@path);
+    }
+    unless(@path) {
+      die "$0: Cannot locate \"$MAKEFILES\" in \"$cwd\" or any parent.\n";
+    }
+    $top=join('/',@path);
+  }
+
+  $ENV{'SOURCEDIR'}=$top;
+  # Now figure out the platform information.
+
+  if(GetPlatformInfo(map(\$ENV{$_},
+			 qw(PLATFORM PLATFORM_OS PLATFORM_ARCH
+			    PLATFORM_VERSION PLATFORM_MAJOR PLATFORM_MINOR
+			    PLATFORM_WIDE PLATFORM_WIDE_ARCH
+			    PLATFORM_NARROW PLATFORM_NARROW_ARCH)))eq"") {
+    die "$0: Cannot determine platform.\n";
+  }
+
+  undef($ENV{PROJECT});
+  if(defined($project)) {
+    $ENV{'PROJECT'}=$project;
+  } else {
+    my($path_prefix);
+    foreach (keys(%KNOWN_PROJECTS)) {
+      if($ENV{'SOURCEDIR'}=~/[^a-z](\Q$_\E|\Q$KNOWN_PROJECTS{$_}\E)([^a-z]|\z)/i) {
+	if(!defined($path_prefix) or length($`)>length($path_prefix)) {
+	  $ENV{'PROJECT'}=$KNOWN_PROJECTS{$_};
+	  $path_prefix=$`;
+	}
+      }
+    }
+    unless(defined($ENV{'PROJECT'})) {
+      my($ref_dir)=File::Basename::basename($ENV{SOURCEDIR});
+      # Now remove suffix information.
+      $ref_dir=(split(/[-._]/,$ref_dir,2))[0];
+      # Check to see if it is a known shortform
+      if(exists($KNOWN_PROJECTS{lc($ref_dir)})) {
+	$ENV{PROJECT}=$KNOWN_PROJECTS{lc($ref_dir)};
+      } else {
+	$ENV{PROJECT}=$ref_dir;
+      }
+      unless(-e ($_=File::Path::Join($ENV{SOURCEDIR},$MAKEFILES,'algo.'.$ENV{PROJECT}.'.mk'))) {
+	warn "WARNING: Cannot find \"$_\" ($!), maybe I didn't guess the project ($ENV{PROJECT}) properly from the source directory name?\n";
+      }
+    }
+  }
+
+  $root=~s/\$PROJECT(?=$|\W)/$ENV{PROJECT}/g;
+  $root=~s/\$\{PROJECT\}/$ENV{PROJECT}/g;
+
+  my($plat_var)=$ENV{PLATFORM};
+  $plat_var.='-'.$variant if defined($variant);
+  my($share_var)='share';
+  $share_var.='-'.$variant if defined($variant) and $share_variant;
+
+  foreach my $var (keys(%paths)) {
+    my $arg=$paths{$var};
+    my $share=$share and exists($share_paths{$var});
+    if(defined($outputs{$arg.'dir'})) {
+      $ENV{$var}=$outputs{$arg.'dir'};
+      $share and die "Cannot set 'share' version of full path \"${arg}dir\".\n";
+    } else {
+      my $root=$root;
+      if(defined($outputs{$arg.'root'})) {
+	$root=$outputs{$arg.'root'};
+      } else {
+	exists($default_paths{$var}) or next;
+	$root=File::Path::Join($root,$arg);
+      }
+      $ENV{$var}=File::Path::Join($root,$plat_var);
+      $share and $ENV{'SHARE_'.$var}=File::Path::Join($root,$share_var);
+    }
+  }
+
+  $ENV{'DEFAULT_MK'}="algo.mk";
+
+  my($common_mk);
+  unless(defined($common_mk=File::Path::Canonize($_=File::Path::Join($ENV{'SOURCEDIR'},
+								     $GENERIC_MAKEFILES)))) {
+    die "Cannot canonize \"",$_,"\".\n";
+  }
+  $ENV{'SYSMKDIRS'}=
+    File::Path::joinSearchPath(File::Path::Join($ENV{'SOURCEDIR'},$MAKEFILES),
+			       $common_mk);
+
+  unless(@command) {
+    if(defined($ENV{SHELL}) && (!&OS::isDOS || File::Path::isFullPath($ENV{SHELL}))) {
+      @command=($ENV{SHELL});
+    } elsif(&OS::isDOS and defined($ENV{ComSpec})) {
+      @command=($ENV{ComSpec});
+    } else {
+      die "Can't determine your shell; set SHELL ",&OS::isDOS?"(or ComSpec)":()," in your environment.";
+    }
+    foreach(qw(PROJECT SOURCEDIR ARCH WIDE_ARCH PLATFORM PLATFORM_NARROW PLATFORM_WIDE SYSMKDIRS OPT DEBUG CXX_STL NO_SHARED_OBJECTS MULTITHREAD),
+	    defined($compiler)?('COMPILER','tool_'.$ENV{COMPILER}.'_version'):(),
+	    sort(keys(%paths)),
+	    map('SHARE_'.$_,sort(keys(%share_paths)))) {
+      print "$0: $_=$ENV{$_}\n" if exists($ENV{$_});
+    }
+  }
+  if(&OS::isDOS) {
+    my($rc)=system(@command);
+    exit($rc?($rc&0xff?0xff:$rc/256):0)
+  } else {
+    exec(@command);
+    warn "$0: Could not start \"@command\"--$!\n";
+  }
+}
+# This program execs... if it doesn't exec something, we're broken.
+exit 127;
+
+__END__
+
+=head1 NAME
+
+algoworkon -- Establish build environment for B<algomake>
+
+=head1 SYNOPSIS
+
+  algoworkon [--narrow] [--wide]
+             [(-r|--root=)path]
+             [--exportdir=path] [--exportroot=path]
+             [--objdir=path] [--objroot=path]
+             [--shipdir=path] [--shiproot=path]
+             [--testdir=path] [--testroot=path]
+             [--postdir=path] [--postroot=path]
+             [--rundir=path] [--runroot=path]
+             [--makefiles=string] [--generic-makefiles=string]
+             [--compiler=name]
+             [--[no]optimize]
+             [--[no]debug]
+             [--[no](multithread|mt)] [--[no](singlethread|st)]
+             [--[no]static] [--[no]shared]
+             [--[no]stl]
+             [(-v|--variant=)string*]
+             [--[no]share] [--[no]share-variant]
+             [(-p|--project=)name]
+             [path]
+             [(--exec|-c) command arg ...]
+
+=head1 DESCRIPTION
+
+B<algoworkon> establishes environment variables used by B<algomake> to
+locate the output directories, system makefiles, and so on.
+
+The root of your source tree is the most important of these.  A number
+of other values can be computed from it, in particular, the project
+name.  (The project name determines which algomake I<personality
+files> are loaded.)
+
+The source tree can be identified in two ways:
+
+=over 4
+
+=item 1
+
+I<path>, if specified, will be used without alteration.  The
+I<project> will be guessed from the path.  C<--project> can be used to
+specify a particular project if the guess is wrong.
+
+=item 2
+
+The current working directory and all its parents are searched (from
+CWD to root) to locate a directory named F<makefiles>.  The directory
+containing F<makefiles> is then used as if it was specified as
+I<path>, however, your current directory is not changed.  C<--view>
+and C<--project> can be specified as needed.
+
+=back
+
+=head2 Project name guessing
+
+The project is I<guessed> in one of two ways.  First, I<path> is
+examined for the presence of "known" words which indicate a particular
+project.  Both short forms and long forms are accepted.  The list is
+currently:
+
+=over
+
+=item risk++
+
+Risk++
+
+=item rw
+
+RiskWatch
+
+=item Source
+
+RiskWatch
+
+=item hr
+
+ASE
+
+=item historisk
+
+ASE
+
+=item rwh
+
+RiskWarehouse
+
+=item gl
+
+GenLib
+
+=item bt
+
+BlackTower
+
+=item PCRE
+
+PCRE
+
+=item PCU
+
+PCU
+
+=item AE
+
+AggrEngine
+
+=item ASE
+
+ASE
+
+=item ADS
+
+ADS
+
+=item RWEngine
+
+RWEE
+
+=item RiskWatchEngine
+
+RWEE
+
+=back
+
+If that check does not find a match, the name of the directory
+containing C<makefiles> is used.  If a dot, underscore or hyphen is
+present, the portion to the left is used; otherwise, the entire name
+is used.
+
+=head2 CVS Working Directory Naming Convention
+
+In general, the directory name produced by CVS during B<cvs checkout>
+is suitable for B<algoworkon>.  No exceptions are known at this time.
+
+If you wish to keep multiple branches around, we suggest separating
+the branch designator from the module name with a hyphen, such as:
+
+=over 5
+
+=item RiskWatch-4_2_dev
+
+=item ASE-4_0_4
+
+=item PCRE-4_1_0_3
+
+=back
+
+=head2 Subversion Working Directory Naming Convention
+
+Subversion users are reminded that all guides show the following
+syntax for checkout:
+
+  svn checkout URL directory
+
+Which creates I<directory> from I<URL>.  Although the last element of
+I<URL> will be used if I<directory> is not specified, this is almost
+certainly not what you want; it will be a branch name (which is just a
+version number), the word 'trunk', or something else that will not
+identify the project.
+
+=head2 Source Directory Options
+
+By default, the C<SYSMKDIRS> variable is set to the path C<makefiles>
+and C<makefiles/system> in the source directory.
+
+The I<--makefiles=string> option will change the C<makefiles>
+component to the specified value, which affects both paths.
+
+I<--generic-makefiles=string> will change only the C<makefiles/system>
+path.
+
+=head2 ALGOMake Options
+
+Several C<algoworkon> options are used to pre-set variables for
+C<algomake>.  Some also add variants to the generated directory names,
+these are added in the order the options are shown here.
+
+=over 4
+
+=item C<--compiler=>I<Name>-I<Version>
+
+Set the environment variable C<COMPILER> to I<Name>; variable
+tool_I<Name>_version to I<Version>; and add a variant
+I<Name>-I<Version>.  (Uses a different compiler and separates the
+output from builds done with other compilers.)
+
+=item C<--optimize>
+
+Set the environment variable C<OPT> to C<yes>.
+(Explicitly enables optimization.)
+
+=item C<--nooptimize>
+
+Set the environment variable C<OPT> to C<no>; add a variant C<noopt>.
+(Disables optimization and separates the output from
+optimized builds..)
+
+=item C<--debug>
+
+Set the environment variable C<DEBUG> to C<yes>; add a variant
+C<debug>.  (Enables debugging and separates the output from non-debug
+builds.)
+
+=item C<--nodebug>
+
+Set the environment variable C<DEBUG> to C<no>.  (Explicitly disables
+debugging.)
+
+=item C<--(multithread|mt)>
+
+Sets the environment variable C<MULTITHREAD> to C<yes>; add a variant
+C<mt>.  (Enable generation of multithreaded (re-entrant) code.)
+
+=item C<--no(multithread|mt)>
+
+Sets the environment variable C<MULTITHREAD> to C<no>.  (Disable
+generation of multithreaded code.)
+
+=item C<--(singlethread|st)>
+
+Sets the environment variable C<MULTITHREAD> to C<no>; add a variant
+C<st>.  (Disable generation of multithreaded code.)
+
+=item C<--no(singlethread|st)>
+
+Sets the environment variable C<MULTITHREAD> to C<yes>.  (Enable
+generation of multithreaded code.)
+
+=item C<--static>
+
+Sets the environment variable C<NO_SHARED_OBJECTS> to C<yes>; add a
+variant C<static>.  (Disables use of shared objects or DLLs.)
+
+=item C<--nostatic>
+
+Sets the environment variable C<NO_SHARED_OBJECTS> to C<no>.  (Enables
+use of shared objects or DLLs.)
+
+=item C<--shared>
+
+Sets the environment variable C<NO_SHARED_OBJECTS> to C<no>; add a
+variant C<shared>.  (Enables use of shared objects or DLLs.)
+
+=item C<--noshared>
+
+Sets the environment variable C<NO_SHARED_OBJECTS> to C<yes>.  (Disables
+use of shared objects or DLLs.)
+
+=item C<--stl>
+
+Sets the environment variable C<CXX_STL> to C<yes>.  (Explicitly
+enables C++ Standard Template Library usage.  Usually this is the
+default in the makefiles, except with very old compilers.)
+
+=item C<--nostl>
+
+Sets the environment variable C<CXX_STL> to C<no>; add a variant
+C<nostl>.  (Disable use of the C++ Standard Template Library.  This
+may not work as desired with all compilers.)
+
+=back
+
+Additional variant strings can be added to the generated directory
+names with the I<--variant=string> option, which can be repeated.  All
+generated variants (described above) are placed first, followed by the
+those specified with I<--variant>.  The option can be repeated as
+often as needed.
+
+Note that these variant strings will not influence ALGOMake in any
+way; make macros may still need to be set in the environment or on the
+command line to get the desired results.
+
+=head2 Locating your Output
+
+By default, the I<object>, I<ship> and I<export> directories are all
+located underneath the I<source> directory (determined by I<path>).
+
+However, these directories can be easily located somewhere else.  The
+B<--root> option is used to specify a parent directory for all three.
+And the B<--shipdir> option determines the entire path to the ship
+directory.  (This is very handy for directing the output of a build to
+a central fileserver.)  Similarly B<--exportdir> and B<--objdir> fully
+specify the output of the export and object trees, respectively.
+
+It is sometimes handy to let B<algoworkon> continue to add the
+platform and variant portion of the paths; if you use B<--shiproot>,
+B<--exportroot> or B<--objroot>, this is exactly what will happen.
+The path you provide will have the platform and variant appended to
+the end.
+
+The B<--root> option will take its value from the C<ALGOROOT>
+environment variable, if it is defined.  Also, if the string
+C<$PROJECT> is present in the root directory name, it will be replaced
+by the current project name.
+
+Some directories are only established if the options controlling them
+are provided.  They are B<--postdir> (sets POSTDIR), B<--rundir> (sets
+RUNNABLEDIR) and B<--testdir> (sets TESTABLEDIR).  These are generally
+used only for production builds, to establish various kinds of
+publicly-available directories on a fileserver.  There are also
+B<--postroot>, B<--runroot> and B<--testroot> versions of these
+options.
+
+=head2 Running a program
+
+Sometimes it is desirable to run a program from B<algoworkon> instead
+of starting an interactive session.  The B<--exec> option does this by
+using all remaining arguments as the command to start.  For example:
+
+  algoworkon /local/build/source --exec algomake -k MULTITHREAD=yes
+
+This example will set up the appropriate environment variables for a
+source tree at C</local/build/source> and then begin the command
+C<algomake> with arguments C<-k> and C<MULTITHREAD=yes>.
+
+=head2 Environment Variables Read
+
+=over 4
+
+=item SHELL
+
+The path to the user's shell.
+
+=item ALGOROOT
+
+Provides a default I<alternate root> directory for the B<OBJECTDIR>,
+B<EXPORTDIR>, and B<SHIPDIR> variables.  This allows, for example, the
+source directory to be stored on a separate (and perhaps read-only)
+filesystem from all generated files.
+
+The C<-r path> option has the same effect.
+
+=item PLATFORM
+
+If set, C<getplatform> will not be called.  Instead, the I<PLATFORM_*>
+variables will be set from the value of I<PLATFORM>.  This is useful
+on systems which do not support invoking scripts via C<#!/bin/ksh>.
+
+See C<man getplatform> for details on its operation.
+
+=item WIDE_ARCH
+
+If present in the environment, and B<PLATFORM> has not been specified,
+it is passed through to the C<getplatform> call and will influence its
+output.
+
+If B<--wide> is present on the command line, C<WIDE_ARCH> will be set
+to C<yes> before C<getplatform> is called.  Similarly, if B<--narrow>
+is present, C<WIDE_ARCH> will be deleted.
+
+=back
+
+=head2 Environment Variables Set
+
+=over 4
+
+=item SOURCEDIR
+
+The root of the source tree, set to I<path>.
+
+=item PLATFORM
+
+=item PLATFORM_OS
+
+=item PLATFORM_ARCH
+
+=item PLATFORM_VER
+
+=item PLATFORM_MAJOR
+
+=item PLATFORM_MINOR
+
+=item PLATFORM_NARROW
+
+=item PLATFORM_NARROW_ARCH
+
+=item PLATFORM_WIDE
+
+=item PLATFORM_WIDE_ARCH
+
+Set to indicate what we are building on.
+
+=item OBJECTDIR
+
+The offset from the source tree to the object tree.  It will be
+C<../obj/>I<PLATFORM>.
+
+=item EXPORTDIR
+
+The offset from the source tree to the export tree.  It will be
+C<../export/>I<PLATFORM>.
+
+=item SHIPDIR
+
+The offset from the source tree to the ship tree.  It will be
+C<../ship/>I<PLATFORM>, unless overridden with C<--shipdir path>.
+
+=item DEFAULT_MK
+
+The name of the makefile read before all user-specified (or implicit)
+makefiles.  It will be C<default.mk>.
+
+=item SYSMKDIRS
+
+The list of directories in which to locate the system makefiles.
+Currently this will be C<makefiles> and C<makefiles/common> under the
+root of your source directory.
+
+=item COMPILER
+
+=item tool_${COMPILER}_version
+
+Set in response to the B<--compiler> option, and will cause the
+B<algomake> system to utilize the specified compiler.
+
+=item OPT
+
+Set to C<yes> or C<no> if B<--optimize> or B<--nooptimize> is
+specified.  Will override the project's default optimization setting.
+
+=item DEBUG
+
+Set to C<yes> or C<no> if B<--debug> or B<--debug> is specified.  Will
+override the project's default debug setting.
+
+=back
+
+=head1 RETURN VALUES
+
+If there is a problem finding the I<TOP> (if I<path> is not provided),
+starting the new shell, or starting the specified command, the exit
+code is 127.
+
+Otherwise, the exit status is that of the new shell or the specified
+program (if C<-c> is specified), as C<exec> is used instead of
+starting a new process.
+
+=head1 BUGS
+
+Small creatures with lots of legs.
+
+=cut

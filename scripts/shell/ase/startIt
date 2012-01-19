@@ -1,0 +1,17 @@
+#!/bin/sh
+
+EXECUTABLE=runaseserver
+
+PARAMS="-p $PORT $CONFIG -v $SECUR -S $USER---$HOST:$PORT"
+
+command="$BINDIR/$EXECUTABLE $PARAMS"
+
+env | grep LIC
+
+echo $command
+$command
+
+
+
+
+

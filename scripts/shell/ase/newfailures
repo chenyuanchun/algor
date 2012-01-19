@@ -1,0 +1,21 @@
+#!/bin/sh 
+
+# take 2 params: 
+# 1. new test report path
+# 2. report in comparison
+
+MY_FAILURES=`grep FAIL $1 | awk -F\, '{ print $2 }' `
+
+for AFAIL in $MY_FAILURES
+do
+    REPORT=
+
+	grep -w $AFAIL $2 | grep PASS > /dev/null
+
+    rc=$?
+
+    if [ $rc -eq 0 ]; then
+    	echo $AFAIL
+    fi
+done
+

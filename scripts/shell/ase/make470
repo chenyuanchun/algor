@@ -1,0 +1,6 @@
+#!/bin/tcsh
+
+cd ~/src470
+unsetenv PLATFORM
+algoworkon --wide -c algomake CCACHE=no OPT=no DEBUG=yes SMART_HEAP_DEBUG=yes RWDEBUG=no NO_SHARED_OBJECTS=no MULTITHREAD=yes NO_HARD_LINKS=yes GENLIB_DEBUG=yes PARALLEL=3
+cd -
