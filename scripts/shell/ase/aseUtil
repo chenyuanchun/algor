@@ -4,7 +4,7 @@ EXECUTABLE=runaseutility
 
 PARAMS="-m $MACHINE -p $PORT $CONFIG $SECUR $@"
 
-command="$BINDIR/$EXECUTABLE $PARAMS"
+command="$BINDIR/scripts/$EXECUTABLE $PARAMS"
 
 echo $command
 $command

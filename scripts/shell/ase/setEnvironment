@@ -50,10 +50,10 @@ case "run":
   setenv BINDIR /mnts/run/ASE-${ASE_VERSION}/$BUILD_NUM/${USE_PLATFORM}-${USE_COMPILER}/ase-v${ASE_VERSION}/bin/
   breaksw
 case "cmake":
-  setenv BINDIR $TEMP/builds/ase480/ship/${PLATFORM_WIDE}/ase-v4.7.0/bin
+  setenv BINDIR $TEMP/builds/${ASE_VERSION}/ship/${PLATFORM_WIDE}/ase-v4.7.0/bin
   breaksw
 case "algomake":
-  if ( $ASE_VERSION == "4.7.0" ) then
+  if ( $ASE_VERSION == "4.7.0" || $ASE_VERSION == "4.8.0" ) then
     set USE_PLATFORM = ${PLATFORM_WIDE}
   else
     set USE_PLATFORM = ${PLATFORM}

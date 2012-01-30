@@ -1,7 +1,7 @@
 #!/bin/tcsh
 
 setenv PROP_DIR /home/rayc/ase/prop
-setenv LD_LIBRARY_PATH $BINDIR/../lib
+# setenv LD_LIBRARY_PATH $BINDIR/../lib
 setenv ASE_CONFIG_PATH $BINDIR/../cfg
 
 setenv MACHINE $HOST
@@ -12,6 +12,6 @@ setenv CONNECT "-m $MACHINE -p $PORT"
 
 setenv SECUR "-R algosuite-test -U algo -P password"
 
-setenv STARTASE "$BINDIR/runaseserver $SECUR $CONFIG -p $PORT"
-setenv ASEUTIL "$BINDIR/runaseutility $SECUR $CONFIG $CONNECT"
-setenv ASELOAD "$BINDIR/runaseload $SECUR $CONFIG -v"
+setenv STARTASE "$BINDIR/scripts/runaseserver $SECUR $CONFIG -p $PORT"
+setenv ASEUTIL "$BINDIR/scripts/runaseutility $SECUR $CONFIG $CONNECT"
+setenv ASELOAD "$BINDIR/scripts/runaseload $SECUR $CONFIG -v"
