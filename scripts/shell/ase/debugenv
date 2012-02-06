@@ -1,11 +1,14 @@
 #!/bin/tcsh
 
+setenv LD_LIBRARY_PATH $BINDIR/../lib
 if($1 == cmake) then
-  setenv BUILD_DIR ${TEMP}/builds/ase480
-  setenv ASE_HOME ${BUILD_DIR}/ship/rhel-x86_64-5.2/ase-v4.7.0
+  echo set up for cmake build...
+  setenv BUILD_DIR ${TEMP}/builds/$ASE_VERSION
+  setenv ASE_HOME ${BUILD_DIR}/ship/rhel-x86_64-5.2/ase-v$ASE_VERSION
   setenv SERVER_EXEC ${ASE_HOME}/bin/exec/aseserver
   setenv UTIL_EXEC ${ASE_HOME}/bin/exec/aseutility
 else
-  setenv ASE_HOME $SOURCE/ASE-4.7.0/ship/${PLATFORM_WIDE}/ase-v
-  setenv SERVER_EXEC $SOURCE/ASE-4.7.0/obj/${PLATFORM_WIDE}/ScenarioEngine/aseserver
+  echo set up for algomake build...
+  setenv ASE_HOME $SOURCE/ASE-${ASE_VERSION}/ship/${PLATFORM_WIDE}/ase-v
+  setenv SERVER_EXEC $SOURCE/ASE-${ASE_VERSION}/obj/${PLATFORM_WIDE}/ScenarioEngine/aseserver
 endif

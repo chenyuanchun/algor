@@ -5,7 +5,7 @@
 if ( $# > 0 ) then
   set BUILD_TYPE = $1
 else
-  set BUILD_TYPE = "algomake"
+  set BUILD_TYPE = "cmake"
 endif
 
 switch ( $BUILD_TYPE )
@@ -17,7 +17,7 @@ case "run":
   endif
 
   if ( ${%3} != 0 ) then
-    setenv ASE_VERSION $3
+    setenv ASE_VERSION  $3
     set VERCOM = `/home/ase/TestSuite/scripts/compareReleases.pl "4.7.0" $ASE_VERSION`
     if ( $VERCOM < 0 ) then
       switch ( $ASE_VERSION )
@@ -50,9 +50,19 @@ case "run":
   setenv BINDIR /mnts/run/ASE-${ASE_VERSION}/$BUILD_NUM/${USE_PLATFORM}-${USE_COMPILER}/ase-v${ASE_VERSION}/bin/
   breaksw
 case "cmake":
-  setenv BINDIR $TEMP/builds/${ASE_VERSION}/ship/${PLATFORM_WIDE}/ase-v4.7.0/bin
+  if ( ${%2} != 0 ) then
+    setenv ASE_VERSION  $2
+  else
+    setenv ASE_VERSION  4.8.0
+  setenv BINDIR $TEMP/builds/${ASE_VERSION}/ship/${PLATFORM_WIDE}/ase-v${ASE_VERSION}/bin
   breaksw
 case "algomake":
+  if ( ${%2} != 0 ) then
+    setenv ASE_VERSION  $2
+  else
+    setenv ASE_VERSION  4.8.0
+  endif
+
   if ( $ASE_VERSION == "4.7.0" || $ASE_VERSION == "4.8.0" ) then
     set USE_PLATFORM = ${PLATFORM_WIDE}
   else
