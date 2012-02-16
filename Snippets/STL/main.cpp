@@ -6,7 +6,7 @@ using namespace std;
 
 int main()
 {
-  Searching::testfind();
+  Searching::forEach();
 
   return 0;
 }

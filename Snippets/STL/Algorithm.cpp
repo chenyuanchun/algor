@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <functional>
 using namespace std;
 
 namespace {
@@ -14,6 +15,15 @@ namespace {
     void operator () (int i) { cout << " " << i;}
   };
 }
+
+class TestCallMemberFunc
+{
+public:
+  void doIt()
+  {
+    std::cout << "TestCallMemberFunc::doIt()" << endl;
+  }
+};
 
 void Searching::forEach()
 {
@@ -30,6 +40,11 @@ void Searching::forEach()
   cout << "anvec contains:";
   for_each(anvec.begin(), anvec.end(), myfun);
   cout << endl;
+
+  vector<TestCallMemberFunc*> funcList;
+  TestCallMemberFunc* func1 = new TestCallMemberFunc();
+  funcList.push_back(func1);
+  for_each(funcList.begin(), funcList.end(), mem_fun(&TestCallMemberFunc::doIt));
 }
 
 void Searching::testfind()
