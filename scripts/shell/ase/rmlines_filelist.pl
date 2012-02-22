@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 sub main {
+  my $keyword = shift @ARGV;
   my $inputfile = shift @ARGV;
   open(INPUTFILE, "<$inputfile") or die("Cannot opent the excel file list");
   @asercfiles = <INPUTFILE>;
@@ -14,7 +15,7 @@ sub main {
     my @textlines = <MYINPUT>;
     close(MYINPUT);
 
-    @textlines = grep(!/^ExcelFileVersionNumber/, @textlines);
+    @textlines = grep(!/^$keyword/, @textlines);
  
     open(MYOUTPUT, ">$asercfile") or die("Cannot open $asercfile");
     print MYOUTPUT @textlines;
