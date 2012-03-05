@@ -70,6 +70,9 @@ while (<DATA>) {
   print "$line[0]\n";
 }
 
+# predefined variables
+print "Line number of the file just processed : $.\n";
+
 __DATA__
 Betty Boop:245-836-8357:635 Cutesy Lane, Hollywood, CA 91464:6/23/23:14500
 Igor Chevsky:385-375-8395:3567 Populus Place, Caldwell, NJ 23875:6/18/68:23400
