@@ -1,4 +1,5 @@
 SET(SYSTEST_SRC main.cpp
+                Mmap.cpp 
                 Math.cpp)
 
 ADD_EXECUTABLE(clibtest ${SYSTEST_SRC})

@@ -2,4 +2,4 @@ cmake_minimum_required(VERSION 2.8)
 
 ADD_SUBDIRECTORY(STL)
 ADD_SUBDIRECTORY(Clib)
-ADD_SUBDIRECTORY(algorithm)
+#ADD_SUBDIRECTORY(algorithm)

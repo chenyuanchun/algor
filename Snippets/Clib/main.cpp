@@ -1,8 +1,10 @@
 #include "common.h"
 
+extern void testMmap();
+
 int main()
 {
-  floatOperations();
+  testMmap();
 
   return 0;
 }
